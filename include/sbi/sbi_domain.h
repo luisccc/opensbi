@@ -15,6 +15,8 @@
 
 struct sbi_scratch;
 
+#define SBI_IODOMAIN_MAX_RRID	16
+
 /** Domain access types */
 enum sbi_domain_access {
 	SBI_DOMAIN_READ = (1UL << 0),
@@ -80,6 +82,22 @@ struct sbi_domain {
 	bool system_reset_allowed;
 };
 
+/** Representation of IOPMP domain */
+struct sbi_iodomain {
+	/**
+	 * Logical index of this domain
+	 * Note: This set by sbi_domain_finalize() in the coldboot path
+	 */
+	u32 index;
+	/** Name of this iodomain */
+	char name[64];
+	u32 rrids[SBI_IODOMAIN_MAX_RRID];
+	u32 rrids_count;
+
+	/** Array of memory regions terminated by a region with order zero */
+	struct sbi_domain_memregion *regions;
+};
+
 /** The root domain instance */
 extern struct sbi_domain root;
 
@@ -97,17 +115,32 @@ extern struct sbi_domain *hartid_to_domain_table[];
 /** Index to domain table */
 extern struct sbi_domain *domidx_to_domain_table[];
 
+/** Index to iodomain table */
+extern struct sbi_iodomain *domidx_to_iodomain_table[];
+
 /** Get pointer to sbi_domain from index */
 #define sbi_index_to_domain(__index) \
 	domidx_to_domain_table[__index]
+
+/** Get pointer to sbi_domain from index */
+#define sbi_index_to_iodomain(__index) \
+	domidx_to_iodomain_table[__index]
 
 /** Iterate over each domain */
 #define sbi_domain_for_each(__i, __d) \
 	for ((__i) = 0; ((__d) = sbi_index_to_domain(__i)); (__i)++)
 
+/** Iterate over each iodomain */
+#define sbi_iodomain_for_each(__i, __d) \
+	for ((__i) = 0; ((__d) = sbi_index_to_iodomain(__i)); (__i)++)
+
 /** Iterate over each memory region of a domain */
 #define sbi_domain_for_each_memregion(__d, __r) \
 	for ((__r) = (__d)->regions; (__r)->order; (__r)++)
+
+/** Iterate over each memory region of a domain */
+#define sbi_iodomain_for_each_rrid(__d, __r, __it) \
+	for ((__r) = (__d)->rrids; (__it) < (__d)->rrids_count; (__it)++, (__r)++)
 
 /**
  * Check whether given HART is assigned to specified domain
@@ -170,6 +203,7 @@ void sbi_domain_dump_all(const char *suffix);
 int sbi_domain_register(struct sbi_domain *dom,
 			const struct sbi_hartmask *assign_mask);
 
+int sbi_iodomain_register(struct sbi_iodomain *dom);
 /**
  * Add a memory region to the root domain
  * @param reg pointer to the memory region to be added
@@ -184,4 +218,5 @@ int sbi_domain_finalize(struct sbi_scratch *scratch, u32 cold_hartid);
 /** Initialize domains */
 int sbi_domain_init(struct sbi_scratch *scratch, u32 cold_hartid);
 
+int sbi_iodomain_init(struct sbi_scratch *scratch, bool cold_boot);
 #endif

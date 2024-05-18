@@ -26,6 +26,10 @@
 #include <sbi/sbi_tlb.h>
 #include <sbi/sbi_version.h>
 
+#include <sbi_utils/fdt/fdt_helper.h>
+#include <sbi_utils/fdt/fdt_domain.h>
+
+
 #define BANNER                                              \
 	"   ____                    _____ ____ _____\n"     \
 	"  / __ \\                  / ____|  _ \\_   _|\n"  \
@@ -313,6 +317,15 @@ static void __noreturn init_coldboot(struct sbi_scratch *scratch, u32 hartid)
 			   __func__, rc);
 		sbi_hart_hang();
 	}
+
+	sbi_printf("Going for iodomains\n");
+	rc = sbi_iodomain_init(scratch, TRUE);
+	if (rc) {
+		sbi_printf("%s: platform irqchip init failed (error %d)\n",
+			   __func__, rc);
+		sbi_hart_hang();
+	}
+
 
 	rc = sbi_hart_pmp_configure(scratch);
 	if (rc) {

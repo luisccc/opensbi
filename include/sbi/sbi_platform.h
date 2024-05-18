@@ -89,6 +89,9 @@ struct sbi_platform_operations {
 	/** Initialize (or populate) domains for the platform */
 	int (*domains_init)(void);
 
+	/** Initialize (or populate) iodomains for the platform */
+	int (*iodomains_init)(bool cold_boot);;
+
 	/** Initialize hw performance counters */
 	int (*pmu_init)(void);
 
@@ -394,6 +397,21 @@ static inline int sbi_platform_domains_init(const struct sbi_platform *plat)
 {
 	if (plat && sbi_platform_ops(plat)->domains_init)
 		return sbi_platform_ops(plat)->domains_init();
+	return 0;
+}
+
+/**
+ * Initialize (or populate) iodomains for the platform
+ *
+ * @param plat pointer to struct sbi_platform
+ *
+ * @return 0 on success and negative error code on failure
+ */
+static inline int sbi_platform_iodomains_init(const struct sbi_platform *plat,
+					  bool cold_boot)
+{
+	if (plat && sbi_platform_ops(plat)->iodomains_init)
+		return sbi_platform_ops(plat)->iodomains_init(cold_boot);
 	return 0;
 }
 

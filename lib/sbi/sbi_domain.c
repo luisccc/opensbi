@@ -19,7 +19,9 @@
 
 struct sbi_domain *hartid_to_domain_table[SBI_HARTMASK_MAX_BITS] = { 0 };
 struct sbi_domain *domidx_to_domain_table[SBI_DOMAIN_MAX_INDEX] = { 0 };
+struct sbi_iodomain *domidx_to_iodomain_table[SBI_DOMAIN_MAX_INDEX] = { 0 };
 static u32 domain_count = 0;
+static u32 iodomain_count = 0;
 static bool domain_finalized = false;
 
 static struct sbi_hartmask root_hmask = { 0 };
@@ -456,6 +458,69 @@ int sbi_domain_register(struct sbi_domain *dom,
 	return 0;
 }
 
+int sbi_iodomain_register(struct sbi_iodomain *dom)
+{
+	u32 i = 0;
+	u32* rrid;
+	//int rc;
+	struct sbi_iodomain *tdom;
+	struct sbi_domain_memregion *reg;
+
+	/* Sanity checks */
+	if (!dom)
+		return SBI_EINVAL;
+
+	/* Check if domain already discovered */
+	sbi_iodomain_for_each(i, tdom) {
+		if (tdom == dom)
+			return SBI_EALREADY;
+	}
+
+	/*
+	 * Ensure that we have room for Domain Index to
+	 * HART ID mapping
+	 */
+	if (SBI_DOMAIN_MAX_INDEX <= iodomain_count) {
+		sbi_printf("%s: No room for %s\n",
+			   __func__, dom->name);
+		return SBI_ENOSPC;
+	}
+
+	// /* Sanitize discovered domain */
+	// rc = sanitize_domain(plat, dom);
+	// if (rc) {
+	// 	sbi_printf("%s: sanity checks failed for"
+	// 		   " %s (error %d)\n", __func__,
+	// 		   dom->name, rc);
+	// 	return rc;
+	// }
+
+	/* Assign index to domain */
+	dom->index = iodomain_count++;
+	domidx_to_iodomain_table[dom->index] = dom;
+
+	sbi_printf("Created IODOMAIN: %s\n", dom->name);
+
+	sbi_iodomain_for_each_rrid(dom, rrid, i) {
+		sbi_printf("RRID: %d \n", *rrid);
+	}
+
+	sbi_domain_for_each_memregion(dom, reg) {
+		sbi_printf("Region Info: \n");
+		if (reg->flags & SBI_DOMAIN_MEMREGION_READABLE)
+			sbi_printf("Readable \n");
+		if (reg->flags & SBI_DOMAIN_MEMREGION_WRITEABLE)
+			sbi_printf("Writeable \n");
+		if (reg->flags & SBI_DOMAIN_MEMREGION_MMODE)
+			sbi_printf("Mode: %lx \n", reg->flags & SBI_DOMAIN_MEMREGION_MMODE);
+
+		sbi_printf("Base Addr: %lx \n", reg->base);
+		sbi_printf("Order: %lx \n", reg->order);
+	}
+
+	return 0;
+}
+
 int sbi_domain_root_add_memregion(const struct sbi_domain_memregion *reg)
 {
 	int rc;
@@ -615,4 +680,19 @@ int sbi_domain_init(struct sbi_scratch *scratch, u32 cold_hartid)
 	}
 
 	return sbi_domain_register(&root, &root_hmask);
+}
+
+int sbi_iodomain_init(struct sbi_scratch *scratch, bool cold_boot)
+{
+	int rc;
+	const struct sbi_platform *plat = sbi_platform_ptr(scratch);
+
+	/* Initialize and populate domains for the platform */
+	rc = sbi_platform_iodomains_init(plat, cold_boot);
+	if (rc) {
+		sbi_printf("%s: platform iodomains_init() failed (error %d)\n", __func__, rc);
+		return rc;
+	}
+
+	return 0;
 }

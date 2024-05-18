@@ -28,6 +28,9 @@ int fdt_iterate_each_domain(void *fdt, void *opaque,
 			    int (*fn)(void *fdt, int domain_offset,
 				      void *opaque));
 
+int fdt_iterate_each_iodomain(void *fdt,
+			    int (*fn)(void *fdt, int domain_offset));
+
 /**
  * Iterate over each memregion of a domain in device tree
  *
@@ -69,5 +72,7 @@ void fdt_domain_fixup(void *fdt);
  * @return 0 on success and negative error code on failure
  */
 int fdt_domains_populate(void *fdt);
+
+int fdt_iodomains_populate(void *fdt);
 
 #endif /* __FDT_DOMAIN_H__ */

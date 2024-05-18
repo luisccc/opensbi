@@ -229,6 +229,8 @@ int sbi_hart_pmp_configure(struct sbi_scratch *scratch)
 			sbi_printf(" because memory region address %lx or size %lx is not in range\n",
 				    reg->base, reg->order);
 		}
+
+		sbi_printf("pmp_idx: %d, pmp_base_addr: %lx, pmp_size: %lx \n", pmp_idx, reg->base, reg->order);
 	}
 
 	return 0;
