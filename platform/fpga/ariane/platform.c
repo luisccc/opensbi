@@ -18,6 +18,7 @@
 #include <sbi_utils/irqchip/plic.h>
 #include <sbi_utils/serial/uart8250.h>
 #include <sbi_utils/timer/aclint_mtimer.h>
+#include <sbi_utils/iopmp/iopmp.h>
 
 #define ARIANE_UART_ADDR			0x10000000
 #define ARIANE_UART_FREQ			50000000
@@ -33,6 +34,8 @@
 						 CLINT_MSWI_OFFSET)
 #define ARIANE_ACLINT_MTIMER_ADDR		(ARIANE_CLINT_ADDR + \
 						 CLINT_MTIMER_OFFSET)
+// Base address of the IOPMP Programming Interface
+#define IOPMP_BASE_ADDR            	0x50020000
 
 static struct plic_data plic = {
 	.addr = ARIANE_PLIC_ADDR,
@@ -44,6 +47,15 @@ static struct aclint_mswi_data mswi = {
 	.size = ACLINT_MSWI_SIZE,
 	.first_hartid = 0,
 	.hart_count = ARIANE_HART_COUNT,
+};
+
+static struct iopmp_data iopmp = {
+	/* Public details */
+	.addr = IOPMP_BASE_ADDR,
+	.size = IOPMP_SIZE,
+    .number_rrids	= 1,
+    .number_entries	= 32,
+    .number_mds		= 16,
 };
 
 static struct aclint_mtimer_data mtimer = {
@@ -153,7 +165,7 @@ static int ariane_ipi_init(bool cold_boot)
 }
 
 /*
- * Initialize IPI for current HART.
+ * Initialize io_domains
  */
 static int ariane_iodomains_init(bool cold_boot)
 {
@@ -165,6 +177,11 @@ static int ariane_iodomains_init(bool cold_boot)
 
 	fdt = fdt_get_address();
 	fdt_iodomains_populate(fdt);
+	iopmp_init_data(&iopmp);
+
+	uintptr_t start_raddr = 0x40000000;
+	enable_iopmp();
+	set_entry_napot(start_raddr, 8, ACCESS_READ, 0);
 
 	return 0;
 }
