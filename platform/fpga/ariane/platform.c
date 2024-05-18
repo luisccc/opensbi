@@ -13,6 +13,7 @@
 #include <sbi/sbi_platform.h>
 #include <sbi_utils/fdt/fdt_helper.h>
 #include <sbi_utils/fdt/fdt_fixup.h>
+#include <sbi_utils/fdt/fdt_domain.h>
 #include <sbi_utils/ipi/aclint_mswi.h>
 #include <sbi_utils/irqchip/plic.h>
 #include <sbi_utils/serial/uart8250.h>
@@ -152,11 +153,31 @@ static int ariane_ipi_init(bool cold_boot)
 }
 
 /*
+ * Initialize IPI for current HART.
+ */
+static int ariane_iodomains_init(bool cold_boot)
+{
+	void *fdt;
+
+	// Setup already performed
+	if (!cold_boot)
+		return 0;
+
+	fdt = fdt_get_address();
+	fdt_iodomains_populate(fdt);
+
+	return 0;
+}
+
+/*
  * Initialize ariane timer for current HART.
  */
 static int ariane_timer_init(bool cold_boot)
 {
 	int ret;
+
+	if (!cold_boot)
+		return 0;
 
 	if (cold_boot) {
 		ret = aclint_mtimer_cold_init(&mtimer, NULL);
@@ -177,6 +198,7 @@ const struct sbi_platform_operations platform_ops = {
 	.irqchip_init = ariane_irqchip_init,
 	.ipi_init = ariane_ipi_init,
 	.timer_init = ariane_timer_init,
+	.iodomains_init = ariane_iodomains_init,
 };
 
 const struct sbi_platform platform = {
