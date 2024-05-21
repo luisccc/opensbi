@@ -179,9 +179,8 @@ static int ariane_iodomains_init(bool cold_boot)
 	fdt_iodomains_populate(fdt);
 	iopmp_init_data(&iopmp);
 
-	uintptr_t start_raddr = 0x40000000;
+	iopmp_configure();
 	enable_iopmp();
-	set_entry_napot(start_raddr, 8, ACCESS_READ, 0);
 
 	return 0;
 }

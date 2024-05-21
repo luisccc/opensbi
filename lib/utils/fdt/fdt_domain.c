@@ -70,7 +70,7 @@ int fdt_iterate_each_iodomain(void *fdt,
 					      "opensbi,iodomain,instance"))
 						continue;
 			
-		sbi_printf("I found an iodomain \n");
+		sbi_printf("Found an iodomain \n");
 		rc = fn(fdt, doffset);
 		if (rc)
 			return rc;

@@ -507,12 +507,15 @@ int sbi_iodomain_register(struct sbi_iodomain *dom)
 
 	sbi_domain_for_each_memregion(dom, reg) {
 		sbi_printf("Region Info: \n");
+		sbi_printf("Flags: %lx\n", reg->flags);
 		if (reg->flags & SBI_DOMAIN_MEMREGION_READABLE)
 			sbi_printf("Readable \n");
 		if (reg->flags & SBI_DOMAIN_MEMREGION_WRITEABLE)
 			sbi_printf("Writeable \n");
 		if (reg->flags & SBI_DOMAIN_MEMREGION_MMODE)
 			sbi_printf("Mode: %lx \n", reg->flags & SBI_DOMAIN_MEMREGION_MMODE);
+		if (reg->flags & SBI_DOMAIN_MEMREGION_AMODE)
+			sbi_printf("AMode: %lx \n", reg->flags & SBI_DOMAIN_MEMREGION_AMODE);
 
 		sbi_printf("Base Addr: %lx \n", reg->base);
 		sbi_printf("Order: %lx \n", reg->order);
