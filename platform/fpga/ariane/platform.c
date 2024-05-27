@@ -177,10 +177,10 @@ static int ariane_iodomains_init(bool cold_boot)
 
 	fdt = fdt_get_address();
 	fdt_iodomains_populate(fdt);
-	iopmp_init_data(&iopmp);
 
+	iopmp_init_data(&iopmp);
 	iopmp_configure();
-	enable_iopmp();
+	iopmp_enable();
 
 	return 0;
 }

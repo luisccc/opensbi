@@ -120,23 +120,11 @@ struct iopmp_data {
 
 void iopmp_init_data(struct iopmp_data *iopmp);
 void iopmp_configure(void);
-void enable_iopmp(void);
+void iopmp_enable(void);
 int iopmp_entry_set(unsigned int n, unsigned long prot, unsigned long addr,
 	    unsigned long log2len);
 void iopmp_mdcfg_config(unsigned int n, unsigned int t);
 void iopmp_srcmd_config(unsigned int n, u64 mds_bmap, u8 lock);
 
-void entry_config(u64 addr, u8 mode, u8 access, u16 entry_num);
-void set_entry_napot(u64 base_addr, u64 length, u8 access, u16 entry_num);
-void set_entry_tor(u64 base_addr, u8 access, u16 entry_num);
-void set_entry_off(u64 base_addr, u8 access, u16 entry_num);
-void srcmd_entry_config(u16* mds, u8 number_mds, u8 lock, u8 entry_num);
-void mdcfg_entry_config(u16 t, u8 entry_num);
-void clean_all_entries();
-
-void clean_error_reg();
-u32 read_error_reqinfo();
-u32 read_error_reqid();
-u64 read_error_reqaddr();
 
 #endif  /* _RV_IOPMP_H_ */
