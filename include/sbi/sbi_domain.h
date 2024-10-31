@@ -197,6 +197,12 @@ struct sbi_domain {
 /** The root domain instance */
 extern struct sbi_domain root;
 
+// Get amount of domains
+u32 sbi_domain_get_count(void);
+
+/** Get pointer to sbi_domain from Domain index */
+const struct sbi_domain *sbi_index_to_domain(u32 domain_index);
+
 /** Get pointer to sbi_domain from HART index */
 struct sbi_domain *sbi_hartindex_to_domain(u32 hartindex);
 

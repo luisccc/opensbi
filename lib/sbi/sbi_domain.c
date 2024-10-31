@@ -860,3 +860,20 @@ fail_free_domain_hart_ptr_offset:
 	sbi_scratch_free_offset(domain_hart_ptr_offset);
 	return rc;
 }
+
+u32 sbi_domain_get_count(void)
+{
+	return domain_count;
+}
+
+const struct sbi_domain *sbi_index_to_domain(u32 domain_index)
+{
+	const struct sbi_domain *dom;
+
+	sbi_domain_for_each(dom) {
+		if (dom->index == domain_index)
+			return dom;
+	}
+
+	return NULL;
+}
