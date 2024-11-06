@@ -36,18 +36,15 @@
 static int worldguard_generic_final_init(bool cold_boot, void *fdt,
 				     const struct fdt_match *match)
 {
-	//void *fdt = fdt_get_address_rw();
-
 	if (!cold_boot)
 		return 0;
 
-	const struct sbi_domain *dom;
-	
-	dom = sbi_index_to_domain(2);
-	
-	// If it is null do not use dom
-	if(dom)
-		sbi_printf("WorldGuard: Domain Index %i\n", dom->index);
+	const struct sbi_memregion *mem_reg;
+
+	sbi_list_for_each_entry(mem_reg, &memregion_list, node){
+		sbi_printf("WorldGuard: Mem Region Base %lx\n", mem_reg->base);
+		sbi_printf("WorldGuard: Mem Region Order %lx\n", mem_reg->order);
+	}
 
 	sbi_printf("WorldGuard: Final Init\n");
 

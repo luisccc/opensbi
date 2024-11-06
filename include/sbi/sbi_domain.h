@@ -27,8 +27,10 @@ enum sbi_domain_access {
 	SBI_DOMAIN_MMIO = (1UL << 3)
 };
 
-/** Representation of OpenSBI domain memory region */
-struct sbi_domain_memregion {
+/** Representation of OpenSBI memory region */
+struct sbi_memregion {
+	/** Node in linked list of mem regions */
+	struct sbi_dlist node;
 	/**
 	 * Size of memory region as power of 2
 	 * It has to be minimum 3 and maximum __riscv_xlen
@@ -39,6 +41,13 @@ struct sbi_domain_memregion {
 	 * It must be 2^order aligned address
 	 */
 	unsigned long base;
+};
+
+/** Representation of OpenSBI domain memory region */
+struct sbi_domain_memregion {
+	/** Node in linked list of domains */
+	struct sbi_memregion *region;
+
 	/** Flags representing memory region attributes */
 #define SBI_DOMAIN_MEMREGION_M_READABLE		(1UL << 0)
 #define SBI_DOMAIN_MEMREGION_M_WRITABLE		(1UL << 1)
@@ -197,12 +206,6 @@ struct sbi_domain {
 /** The root domain instance */
 extern struct sbi_domain root;
 
-// Get amount of domains
-u32 sbi_domain_get_count(void);
-
-/** Get pointer to sbi_domain from Domain index */
-const struct sbi_domain *sbi_index_to_domain(u32 domain_index);
-
 /** Get pointer to sbi_domain from HART index */
 struct sbi_domain *sbi_hartindex_to_domain(u32 hartindex);
 
@@ -222,7 +225,14 @@ extern struct sbi_dlist domain_list;
 
 /** Iterate over each memory region of a domain */
 #define sbi_domain_for_each_memregion(__d, __r) \
-	for ((__r) = (__d)->regions; (__r)->order; (__r)++)
+	for ((__r) = (__d)->regions; (__r)->region->order; (__r)++)
+
+/** Head of linked list of mem_regions */
+extern struct sbi_dlist memregion_list;
+
+/** Iterate over each mem_region */
+#define sbi_mem_region_for_each(__mr) \
+	sbi_list_for_each_entry(__mr, &memregion_list, node)
 
 /**
  * Check whether given HART is assigned to specified domain
@@ -249,8 +259,9 @@ int sbi_domain_get_assigned_hartmask(const struct sbi_domain *dom,
  * @param size physical size of memory region
  * @param flags memory region flags
  * @param reg pointer to memory region being initialized
+ * @return 0 on success and SBI_Exxx (< 0) on failure
  */
-void sbi_domain_memregion_init(unsigned long addr,
+int sbi_domain_memregion_init(unsigned long addr,
 				unsigned long size,
 				unsigned long flags,
 				struct sbi_domain_memregion *reg);

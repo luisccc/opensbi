@@ -358,15 +358,15 @@ static void sbi_hart_smepmp_set(struct sbi_scratch *scratch,
 				unsigned int pmp_log2gran,
 				unsigned long pmp_addr_max)
 {
-	unsigned long pmp_addr = reg->base >> PMP_SHIFT;
+	unsigned long pmp_addr = reg->region->base >> PMP_SHIFT;
 
-	if (pmp_log2gran <= reg->order && pmp_addr < pmp_addr_max) {
-		pmp_set(pmp_idx, pmp_flags, reg->base, reg->order);
+	if (pmp_log2gran <= reg->region->order && pmp_addr < pmp_addr_max) {
+		pmp_set(pmp_idx, pmp_flags, reg->region->base, reg->region->order);
 	} else {
 		sbi_printf("Can not configure pmp for domain %s because"
 			   " memory region address 0x%lx or size 0x%lx "
-			   "is not in range.\n", dom->name, reg->base,
-			   reg->order);
+			   "is not in range.\n", dom->name, reg->region->base,
+			   reg->region->order);
 	}
 }
 
@@ -476,14 +476,14 @@ static int sbi_hart_oldpmp_configure(struct sbi_scratch *scratch,
 		if (reg->flags & SBI_DOMAIN_MEMREGION_SU_EXECUTABLE)
 			pmp_flags |= PMP_X;
 
-		pmp_addr = reg->base >> PMP_SHIFT;
-		if (pmp_log2gran <= reg->order && pmp_addr < pmp_addr_max) {
-			pmp_set(pmp_idx++, pmp_flags, reg->base, reg->order);
+		pmp_addr = reg->region->base >> PMP_SHIFT;
+		if (pmp_log2gran <= reg->region->order && pmp_addr < pmp_addr_max) {
+			pmp_set(pmp_idx++, pmp_flags, reg->region->base, reg->region->order);
 		} else {
 			sbi_printf("Can not configure pmp for domain %s because"
 				   " memory region address 0x%lx or size 0x%lx "
-				   "is not in range.\n", dom->name, reg->base,
-				   reg->order);
+				   "is not in range.\n", dom->name, reg->region->base,
+				   reg->region->order);
 		}
 	}
 

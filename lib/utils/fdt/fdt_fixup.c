@@ -360,19 +360,19 @@ int fdt_reserved_memory_fixup(void *fdt)
 		}
 
 		bool overlap = false;
-		addr = reg->base;
+		addr = reg->region->base;
 		for (j = 0; j < i; j++) {
 			if (addr == filtered_base[j]
-			    && filtered_order[j] < reg->order) {
+			    && filtered_order[j] < reg->region->order) {
 				overlap = true;
-				filtered_order[j] = reg->order;
+				filtered_order[j] = reg->region->order;
 				break;
 			}
 		}
 
 		if (!overlap) {
-			filtered_base[i] = reg->base;
-			filtered_order[i] = reg->order;
+			filtered_base[i] = reg->region->base;
+			filtered_order[i] = reg->region->order;
 			i++;
 		}
 	}

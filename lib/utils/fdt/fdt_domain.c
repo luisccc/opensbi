@@ -249,7 +249,7 @@ static int __fdt_parse_region(const void *fdt, int domain_offset,
 			      int region_offset, u32 region_access,
 			      void *opaque)
 {
-	int len;
+	int len, rc;
 	u32 val32;
 	u64 val64;
 	const u32 *val;
@@ -294,8 +294,10 @@ static int __fdt_parse_region(const void *fdt, int domain_offset,
 	if (fdt_get_property(fdt, region_offset, "mmio", NULL))
 		flags |= SBI_DOMAIN_MEMREGION_MMIO;
 
-	sbi_domain_memregion_init(base, (order == __riscv_xlen) ? ~0UL : BIT(order),
+	rc = sbi_domain_memregion_init(base, (order == __riscv_xlen) ? ~0UL : BIT(order),
 				  flags, &preg->dom->regions[preg->region_count]);
+	if (rc)
+		return rc;
 
 	preg->region_count++;
 

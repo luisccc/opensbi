@@ -20,6 +20,7 @@
 #include <sbi/sbi_string.h>
 
 SBI_LIST_HEAD(domain_list);
+SBI_LIST_HEAD(memregion_list);
 
 static u32 domain_count = 0;
 static bool domain_finalized = false;
@@ -93,14 +94,21 @@ int sbi_domain_get_assigned_hartmask(const struct sbi_domain *dom,
 	return ret;
 }
 
-void sbi_domain_memregion_init(unsigned long addr,
+int sbi_domain_memregion_init(unsigned long addr,
 				unsigned long size,
 				unsigned long flags,
 				struct sbi_domain_memregion *reg)
 {
+	struct sbi_memregion *mem_reg;
+	struct sbi_dlist *pos;
 	unsigned long base = 0, order;
 
 	for (order = log2roundup(size) ; order <= __riscv_xlen; order++) {
+		if (size == 0){ // Edge case handling
+			order = 0;
+			break;
+		}
+		
 		if (order < __riscv_xlen) {
 			base = addr & ~((1UL << order) - 1UL);
 			if ((base <= addr) &&
@@ -112,14 +120,35 @@ void sbi_domain_memregion_init(unsigned long addr,
 			base = 0;
 			break;
 		}
-
 	}
 
-	if (reg) {
-		reg->base = base;
-		reg->order = order;
+	sbi_list_for_each(pos, &(memregion_list)) {
+		struct sbi_memregion *preg = container_of(pos, struct sbi_memregion, node);
+
+		if(preg->base == base && preg->order == order){
+			if (reg && preg){
+				reg->region = preg;
+				reg->flags = flags;
+				return 0;
+			}
+		}
+	}
+
+	// Create Region
+	mem_reg = sbi_zalloc(sizeof(*reg->region));
+	if (!mem_reg)
+		return SBI_ENOMEM;
+
+	if (reg && mem_reg) {
+		sbi_list_add_tail(&mem_reg->node, &memregion_list);
+
+		mem_reg->base = base;
+		mem_reg->order = order;
+		reg->region = mem_reg;
 		reg->flags = flags;
 	}
+
+	return 0;
 }
 
 bool sbi_domain_check_addr(const struct sbi_domain *dom,
@@ -157,9 +186,9 @@ bool sbi_domain_check_addr(const struct sbi_domain *dom,
 			(rflags & SBI_DOMAIN_MEMREGION_SU_ACCESS_MASK)
 			>> SBI_DOMAIN_MEMREGION_SU_ACCESS_SHIFT);
 
-		rstart = reg->base;
-		rend = (reg->order < __riscv_xlen) ?
-			rstart + ((1UL << reg->order) - 1) : -1UL;
+		rstart = reg->region->base;
+		rend = (reg->region->order < __riscv_xlen) ?
+			rstart + ((1UL << reg->region->order) - 1) : -1UL;
 		if (rstart <= addr && addr <= rend) {
 			rmmio = (rflags & SBI_DOMAIN_MEMREGION_MMIO) ? true : false;
 			if (mmio != rmmio)
@@ -174,13 +203,13 @@ bool sbi_domain_check_addr(const struct sbi_domain *dom,
 /* Check if region complies with constraints */
 static bool is_region_valid(const struct sbi_domain_memregion *reg)
 {
-	if (reg->order < 3 || __riscv_xlen < reg->order)
+	if (reg->region->order < 3 || __riscv_xlen < reg->region->order)
 		return false;
 
-	if (reg->order == __riscv_xlen && reg->base != 0)
+	if (reg->region->order == __riscv_xlen && reg->region->base != 0)
 		return false;
 
-	if (reg->order < __riscv_xlen && (reg->base & (BIT(reg->order) - 1)))
+	if (reg->region->order < __riscv_xlen && (reg->region->base & (BIT(reg->region->order) - 1)))
 		return false;
 
 	return true;
@@ -190,10 +219,10 @@ static bool is_region_valid(const struct sbi_domain_memregion *reg)
 static bool is_region_subset(const struct sbi_domain_memregion *regA,
 			     const struct sbi_domain_memregion *regB)
 {
-	ulong regA_start = regA->base;
-	ulong regA_end = regA->base + (BIT(regA->order) - 1);
-	ulong regB_start = regB->base;
-	ulong regB_end = regB->base + (BIT(regB->order) - 1);
+	ulong regA_start = regA->region->base;
+	ulong regA_end = regA->region->base + (BIT(regA->region->order) - 1);
+	ulong regB_start = regB->region->base;
+	ulong regB_end = regB->region->base + (BIT(regB->region->order) - 1);
 
 	if ((regB_start <= regA_start) &&
 	    (regA_start < regB_end) &&
@@ -218,11 +247,11 @@ static bool is_region_compatible(const struct sbi_domain_memregion *regA,
 static bool is_region_before(const struct sbi_domain_memregion *regA,
 			     const struct sbi_domain_memregion *regB)
 {
-	if (regA->order < regB->order)
+	if (regA->region->order < regB->region->order)
 		return true;
 
-	if ((regA->order == regB->order) &&
-	    (regA->base < regB->base))
+	if ((regA->region->order == regB->region->order) &&
+	    (regA->region->base < regB->region->base))
 		return true;
 
 	return false;
@@ -236,9 +265,9 @@ static const struct sbi_domain_memregion *find_region(
 	struct sbi_domain_memregion *reg;
 
 	sbi_domain_for_each_memregion(dom, reg) {
-		rstart = reg->base;
-		rend = (reg->order < __riscv_xlen) ?
-			rstart + ((1UL << reg->order) - 1) : -1UL;
+		rstart = reg->region->base;
+		rend = (reg->region->order < __riscv_xlen) ?
+			rstart + ((1UL << reg->region->order) - 1) : -1UL;
 		if (rstart <= addr && addr <= rend)
 			return reg;
 	}
@@ -254,12 +283,12 @@ static const struct sbi_domain_memregion *find_next_subset_region(
 	struct sbi_domain_memregion *sreg, *ret = NULL;
 
 	sbi_domain_for_each_memregion(dom, sreg) {
-		if (sreg == reg || (sreg->base <= addr) ||
+		if (sreg == reg || (sreg->region->base <= addr) ||
 		    !is_region_subset(sreg, reg))
 			continue;
 
-		if (!ret || (sreg->base < ret->base) ||
-		    ((sreg->base == ret->base) && (sreg->order < ret->order)))
+		if (!ret || (sreg->region->base < ret->region->base) ||
+		    ((sreg->region->base == ret->region->base) && (sreg->region->order < ret->region->order)))
 			ret = sreg;
 	}
 
@@ -312,7 +341,7 @@ static int sanitize_domain(struct sbi_domain *dom)
 		if (!is_region_valid(reg)) {
 			sbi_printf("%s: %s has invalid region base=0x%lx "
 				   "order=%lu flags=0x%lx\n", __func__,
-				   dom->name, reg->base, reg->order,
+				   dom->name, reg->region->base, reg->region->order,
 				   reg->flags);
 			return SBI_EINVAL;
 		}
@@ -419,9 +448,9 @@ bool sbi_domain_check_addr_range(const struct sbi_domain *dom,
 
 		sreg = find_next_subset_region(dom, reg, addr);
 		if (sreg)
-			addr = sreg->base;
-		else if (reg->order < __riscv_xlen)
-			addr = reg->base + (1UL << reg->order);
+			addr = sreg->region->base;
+		else if (reg->region->order < __riscv_xlen)
+			addr = reg->region->base + (1UL << reg->region->order);
 		else
 			break;
 	}
@@ -452,9 +481,9 @@ void sbi_domain_dump(const struct sbi_domain *dom, const char *suffix)
 
 	i = 0;
 	sbi_domain_for_each_memregion(dom, reg) {
-		rstart = reg->base;
-		rend = (reg->order < __riscv_xlen) ?
-			rstart + ((1UL << reg->order) - 1) : -1UL;
+		rstart = reg->region->base;
+		rend = (reg->region->order < __riscv_xlen) ?
+			rstart + ((1UL << reg->region->order) - 1) : -1UL;
 
 		sbi_printf("Domain%d Region%02d    %s: 0x%" PRILX "-0x%" PRILX " ",
 			   dom->index, i, suffix, rstart, rend);
@@ -619,7 +648,9 @@ static int root_add_memregion(const struct sbi_domain_memregion *reg)
 	nreg = &root.regions[root_memregs_count];
 	sbi_memcpy(nreg, reg, sizeof(*reg));
 	root_memregs_count++;
-	root.regions[root_memregs_count].order = 0;
+	/* Root domain memory region end */
+	sbi_domain_memregion_init(0, 0, 0,
+				  &root.regions[root_memregs_count]);
 
 	/* Sort and optimize root regions */
 	do {
@@ -636,15 +667,15 @@ static int root_add_memregion(const struct sbi_domain_memregion *reg)
 		reg_merged = false;
 		sbi_domain_for_each_memregion(&root, nreg) {
 			nreg1 = nreg + 1;
-			if (!nreg1->order)
+			if (!nreg1->region->order)
 				continue;
 
-			if (!(nreg->base & (BIT(nreg->order + 1) - 1)) &&
-			    (nreg->base + BIT(nreg->order)) == nreg1->base &&
-			    nreg->order == nreg1->order &&
+			if (!(nreg->region->base & (BIT(nreg->region->order + 1) - 1)) &&
+			    (nreg->region->base + BIT(nreg->region->order)) == nreg1->region->base &&
+			    nreg->region->order == nreg1->region->order &&
 			    nreg->flags == nreg1->flags) {
-				nreg->order++;
-				while (nreg1->order) {
+				nreg->region->order++;
+				while (nreg1->region->order) {
 					nreg2 = nreg1 + 1;
 					sbi_memcpy(nreg1, nreg2, sizeof(*nreg1));
 					nreg1++;
@@ -762,6 +793,7 @@ int sbi_domain_init(struct sbi_scratch *scratch, u32 cold_hartid)
 	const struct sbi_platform *plat = sbi_platform_ptr(scratch);
 
 	SBI_INIT_LIST_HEAD(&domain_list);
+	SBI_INIT_LIST_HEAD(&memregion_list);
 
 	if (scratch->fw_rw_offset == 0 ||
 	    (scratch->fw_rw_offset & (scratch->fw_rw_offset - 1)) != 0) {
@@ -829,7 +861,8 @@ int sbi_domain_init(struct sbi_scratch *scratch, u32 cold_hartid)
 				  &root_memregs[root_memregs_count++]);
 
 	/* Root domain memory region end */
-	root_memregs[root_memregs_count].order = 0;
+	sbi_domain_memregion_init(0, 0, 0,
+				  &root_memregs[root_memregs_count]);
 
 	/* Root domain boot HART id is same as coldboot HART id */
 	root.boot_hartid = cold_hartid;
@@ -859,21 +892,4 @@ fail_deinit_context:
 fail_free_domain_hart_ptr_offset:
 	sbi_scratch_free_offset(domain_hart_ptr_offset);
 	return rc;
-}
-
-u32 sbi_domain_get_count(void)
-{
-	return domain_count;
-}
-
-const struct sbi_domain *sbi_index_to_domain(u32 domain_index)
-{
-	const struct sbi_domain *dom;
-
-	sbi_domain_for_each(dom) {
-		if (dom->index == domain_index)
-			return dom;
-	}
-
-	return NULL;
 }
