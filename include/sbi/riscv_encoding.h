@@ -728,6 +728,11 @@
 #define CSR_DSCRATCH0			0x7b2
 #define CSR_DSCRATCH1			0x7b3
 
+/* RISC-V WorldGuard */
+#define CSR_MLWID           0x390
+#define CSR_SLWID           0x190
+#define CSR_MWIDDELEG       0x748
+
 /* Machine Indirect Register Alias */
 #define CSR_MISELECT			0x350
 #define CSR_MIREG			0x351

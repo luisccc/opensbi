@@ -65,6 +65,52 @@ static int fdt_wgmem_init(const void *fdt, int nodeoffset)
     return 0;
 }
 
+int fdt_wghart_init(const void *fdt)
+{
+	const u32 *val;
+	u32 hartid, cold_hartid, wid, widdeleg;
+	int err, len, cpus_offset, cpu_offset;
+
+	/* Sanity checks */
+	if (!fdt)
+		return SBI_EINVAL;
+
+	/* Find /cpus DT node */
+	cpus_offset = fdt_path_offset(fdt, "/cpus");
+	if (cpus_offset < 0)
+		return cpus_offset;
+
+	/* Find coldboot HART domain DT node offset */
+	cold_hartid = current_hartid();
+	fdt_for_each_subnode(cpu_offset, fdt, cpus_offset) {
+		err = fdt_parse_hart_id(fdt, cpu_offset, &hartid);
+		if (err)
+			continue;
+
+		if (hartid != cold_hartid)
+			continue;
+
+		if (!fdt_node_is_enabled(fdt, cpu_offset))
+			continue;
+
+		val = fdt_getprop(fdt, cpu_offset, "lp-wid", &len);
+		if (!val || len != 4)
+			return SBI_EINVAL;
+		wid = fdt32_to_cpu(*val);
+
+		val = fdt_getprop(fdt, cpu_offset, "widdeleg", &len);
+		if (!val || len != 4)
+			return SBI_EINVAL;
+		widdeleg = fdt32_to_cpu(*val);
+
+		break;
+	}
+
+	worldguard_hart_init(wid, widdeleg);
+	
+	return 0;
+}
+
 int fdt_worldguard_init(const void *fdt)
 {
 	int rc, poffset;
@@ -75,8 +121,10 @@ int fdt_worldguard_init(const void *fdt)
 	if (poffset < 0)
 		return 0;
 
-    rc = fdt_wgmem_init(fdt, poffset);
+	rc = fdt_wghart_init(fdt);
+	if (rc) return rc;
 
+    rc = fdt_wgmem_init(fdt, poffset);
     if (rc) return rc;
     
 	rc = fdt_wgchecker_init(fdt, poffset);

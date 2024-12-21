@@ -1,5 +1,7 @@
 #include <sbi/sbi_error.h>
 #include <sbi/sbi_heap.h>
+#include <sbi/riscv_asm.h>
+#include <sbi/riscv_encoding.h>
 #include <sbi_utils/checker/worldguard.h>
 
 SBI_LIST_HEAD(wg_memregion_list);
@@ -8,6 +10,14 @@ int worldguard_init(void)
 {
     // For now just initialize the list
 	SBI_INIT_LIST_HEAD(&wg_memregion_list);
+
+    return 0;
+}
+
+int worldguard_hart_init(unsigned long mlwid, unsigned long mwiddeleg)
+{
+    csr_write_num(CSR_MLWID, mlwid);
+	csr_write_num(CSR_MWIDDELEG, mwiddeleg);
 
     return 0;
 }
