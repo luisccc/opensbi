@@ -70,7 +70,7 @@ config PLATFORM_THEAD
 
 config PLATFORM_WORLDGUARD
 	bool "Worldguard Support"
-	depends on PLATFORM_GENERIC
+	depends on PLATFORM_GENERIC && FDT_WORLDGUARD
 	default n
 
 source "$(OPENSBI_SRC_DIR)/platform/generic/andes/Kconfig"

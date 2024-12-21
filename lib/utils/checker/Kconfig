@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: BSD-2-Clause
+
+menu "WG Checker Device Support"
+
+config FDT_WORLDGUARD
+	bool "FDT based WG Checker drivers"
+	depends on FDT
+	default n
+
+endmenu

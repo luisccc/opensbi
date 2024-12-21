@@ -1,13 +1,3 @@
-/*
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2022 StarFive
- *
- * Authors:
- *   Wei Liang Lim <weiliang.lim@starfivetech.com>
- *   Minda Chen <minda.chen@starfivetech.com>
- */
-
 
 #include <libfdt.h>
 #include <platform_override.h>
@@ -30,6 +20,7 @@
 #include <sbi_utils/timer/fdt_timer.h>
 #include <sbi_utils/ipi/fdt_ipi.h>
 #include <sbi_utils/reset/fdt_reset.h>
+#include <sbi_utils/checker/fdt_worldguard.h>
 #include <sbi_utils/serial/semihosting.h>
 #include <sbi/sbi_domain.h>
 
@@ -39,13 +30,7 @@ static int worldguard_generic_final_init(bool cold_boot, void *fdt,
 	if (!cold_boot)
 		return 0;
 
-	const struct sbi_memregion *mem_reg;
-
-	sbi_list_for_each_entry(mem_reg, &memregion_list, node){
-		sbi_printf("WorldGuard: Mem Region Base %lx\n", mem_reg->base);
-		sbi_printf("WorldGuard: Mem Region Order %lx\n", mem_reg->order);
-	}
-
+	fdt_worldguard_init(fdt);
 	sbi_printf("WorldGuard: Final Init\n");
 
 	return 0;

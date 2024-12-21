@@ -252,6 +252,18 @@ int sbi_domain_get_assigned_hartmask(const struct sbi_domain *dom,
 				     struct sbi_hartmask *mask);
 
 /**
+ * Initialize a  memory region based on it's physical
+ * address and size.
+ *
+ * @param base start physical address of memory region
+ * @param order physical size of memory region
+ * @param mem_reg pointer to the pointer memory region being initialized
+ * @return 0 on success and SBI_Exxx (< 0) on failure
+ */
+int sbi_memregion_init(unsigned long base,
+		       unsigned long order, struct sbi_memregion **mem_reg);
+
+/**
  * Initialize a domain memory region based on it's physical
  * address and size.
  *

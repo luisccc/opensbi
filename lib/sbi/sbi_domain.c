@@ -94,13 +94,41 @@ int sbi_domain_get_assigned_hartmask(const struct sbi_domain *dom,
 	return ret;
 }
 
+int sbi_memregion_init(unsigned long base,
+		       unsigned long order, struct sbi_memregion **mem_reg)
+{
+	struct sbi_dlist *pos;
+
+	// Search for existing region
+	sbi_list_for_each(pos, &(memregion_list)) {
+		struct sbi_memregion *preg = container_of(pos, struct sbi_memregion, node);
+
+		if(preg->base == base && preg->order == order){
+			*mem_reg = preg;
+			return 0;
+		}
+	}
+
+	// Create Region
+	*mem_reg = sbi_zalloc(sizeof(struct sbi_memregion));
+	if (!mem_reg)
+		return SBI_ENOMEM;
+
+	(*mem_reg)->base = base;
+	(*mem_reg)->order = order;
+
+	// Add to the list
+	sbi_list_add_tail(&(*mem_reg)->node, &memregion_list);
+
+	return 0;
+}
+
 int sbi_domain_memregion_init(unsigned long addr,
 				unsigned long size,
 				unsigned long flags,
 				struct sbi_domain_memregion *reg)
 {
-	struct sbi_memregion *mem_reg;
-	struct sbi_dlist *pos;
+	struct sbi_memregion *mem_reg = NULL;
 	unsigned long base = 0, order;
 
 	for (order = log2roundup(size) ; order <= __riscv_xlen; order++) {
@@ -122,33 +150,13 @@ int sbi_domain_memregion_init(unsigned long addr,
 		}
 	}
 
-	sbi_list_for_each(pos, &(memregion_list)) {
-		struct sbi_memregion *preg = container_of(pos, struct sbi_memregion, node);
-
-		if(preg->base == base && preg->order == order){
-			if (reg && preg){
-				reg->region = preg;
-				reg->flags = flags;
-				return 0;
-			}
-		}
-	}
-
-	// Create Region
-	mem_reg = sbi_zalloc(sizeof(*reg->region));
-	if (!mem_reg)
-		return SBI_ENOMEM;
-
-	if (reg && mem_reg) {
-		sbi_list_add_tail(&mem_reg->node, &memregion_list);
-
-		mem_reg->base = base;
-		mem_reg->order = order;
+	if(sbi_memregion_init(base, order, &mem_reg) == SBI_OK){
 		reg->region = mem_reg;
 		reg->flags = flags;
+		return 0;
 	}
 
-	return 0;
+	return SBI_ENOMEM;
 }
 
 bool sbi_domain_check_addr(const struct sbi_domain *dom,
