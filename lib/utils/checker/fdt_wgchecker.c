@@ -9,7 +9,7 @@
 
 int fdt_wgchecker_init(const void *fdt, int nodeoffset)
 {
-	int noff = -1, rc;
+	int noff = -1, rc = 0;
 	struct platform_wgchecker_data checker = { 0 };
 
 	/* Check all DT nodes */

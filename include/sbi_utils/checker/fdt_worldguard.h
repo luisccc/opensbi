@@ -4,7 +4,7 @@
 
 #include <sbi/sbi_types.h>
 
-int fdt_worldguard_init(const void *fdt);
+int fdt_worldguard_init(const void *fdt, bool cold_boot);
 
 
 #endif

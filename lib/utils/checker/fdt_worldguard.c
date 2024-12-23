@@ -68,7 +68,7 @@ static int fdt_wgmem_init(const void *fdt, int nodeoffset)
 int fdt_wghart_init(const void *fdt)
 {
 	const u32 *val;
-	u32 hartid, cold_hartid, wid, widdeleg;
+	u32 hartid, wid = 0, widdeleg = 0;
 	int err, len, cpus_offset, cpu_offset;
 
 	/* Sanity checks */
@@ -80,14 +80,9 @@ int fdt_wghart_init(const void *fdt)
 	if (cpus_offset < 0)
 		return cpus_offset;
 
-	/* Find coldboot HART domain DT node offset */
-	cold_hartid = current_hartid();
 	fdt_for_each_subnode(cpu_offset, fdt, cpus_offset) {
 		err = fdt_parse_hart_id(fdt, cpu_offset, &hartid);
 		if (err)
-			continue;
-
-		if (hartid != cold_hartid)
 			continue;
 
 		if (!fdt_node_is_enabled(fdt, cpu_offset))
@@ -111,11 +106,12 @@ int fdt_wghart_init(const void *fdt)
 	return 0;
 }
 
-int fdt_worldguard_init(const void *fdt)
+int fdt_worldguard_init(const void *fdt, bool cold_boot)
 {
 	int rc, poffset;
 
-    worldguard_init();
+	if(cold_boot)
+    	worldguard_init();
 	
     poffset = fdt_path_offset(fdt, "/worldguard");
 	if (poffset < 0)
@@ -124,10 +120,12 @@ int fdt_worldguard_init(const void *fdt)
 	rc = fdt_wghart_init(fdt);
 	if (rc) return rc;
 
-    rc = fdt_wgmem_init(fdt, poffset);
-    if (rc) return rc;
-    
-	rc = fdt_wgchecker_init(fdt, poffset);
+	if(cold_boot){
+		rc = fdt_wgmem_init(fdt, poffset);
+		if (rc) return rc;
+		
+		rc = fdt_wgchecker_init(fdt, poffset);
+	}
 
 	return rc;
 }

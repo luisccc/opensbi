@@ -27,11 +27,8 @@
 static int worldguard_generic_final_init(bool cold_boot, void *fdt,
 				     const struct fdt_match *match)
 {
-	if (!cold_boot)
-		return 0;
-
-	fdt_worldguard_init(fdt);
-	sbi_printf("WorldGuard: Final Init\n");
+	fdt_worldguard_init(fdt, cold_boot);
+	sbi_printf("WorldGuard config\n");
 
 	return 0;
 }
