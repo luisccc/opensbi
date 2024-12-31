@@ -68,7 +68,8 @@ static int fdt_wgmem_init(const void *fdt, int nodeoffset)
 int fdt_wghart_init(const void *fdt)
 {
 	const u32 *val;
-	u32 hartid, wid = 0, widdeleg = 0;
+	u32 hartid, wid = 0;
+	u64 widdeleg = 0, widdelegh = 0;
 	int err, len, cpus_offset, cpu_offset;
 
 	/* Sanity checks */
@@ -89,19 +90,27 @@ int fdt_wghart_init(const void *fdt)
 			continue;
 
 		val = fdt_getprop(fdt, cpu_offset, "lp-wid", &len);
-		if (!val || len != 4)
-			return SBI_EINVAL;
-		wid = fdt32_to_cpu(*val);
+		if (!(!val || len != 4))
+			wid = fdt32_to_cpu(*val);
 
 		val = fdt_getprop(fdt, cpu_offset, "widdeleg", &len);
-		if (!val || len != 4)
-			return SBI_EINVAL;
-		widdeleg = fdt32_to_cpu(*val);
+		if(val){
+			widdeleg = fdt32_to_cpu(val[0]);
+			if(len == 8)
+				widdeleg = (widdeleg << 32) | fdt32_to_cpu(val[1]);
+		}
+		
+		val = fdt_getprop(fdt, cpu_offset, "widdelegh", &len);
+		if(val){
+			widdelegh = fdt32_to_cpu(val[0]);
+			if(len == 8)
+				widdelegh = (widdelegh << 32) | fdt32_to_cpu(val[1]);
+		}
 
 		break;
 	}
 
-	worldguard_hart_init(wid, widdeleg);
+	worldguard_hart_init(wid, widdeleg, widdelegh);
 	
 	return 0;
 }

@@ -25,7 +25,7 @@ extern struct sbi_dlist wg_memregion_list;
 	sbi_list_for_each_entry(__mr, &wg_memregion_list, node)
 
 int worldguard_init(void);
-int worldguard_hart_init(unsigned long mlwid, unsigned long mwiddeleg);
+int worldguard_hart_init(unsigned long mlwid, unsigned long mwiddeleg, unsigned long mwiddelegh);
 int worldguard_memregion_init(unsigned long base,
 				unsigned long order,
 				unsigned long perm);

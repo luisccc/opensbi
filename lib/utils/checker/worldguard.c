@@ -14,10 +14,13 @@ int worldguard_init(void)
     return 0;
 }
 
-int worldguard_hart_init(unsigned long mlwid, unsigned long mwiddeleg)
+int worldguard_hart_init(unsigned long mlwid, unsigned long mwiddeleg, unsigned long mwiddelegh)
 {
     csr_write_num(CSR_MLWID, mlwid);
 	csr_write_num(CSR_MWIDDELEG, mwiddeleg);
+
+	if(mwiddelegh)
+		csr_write_num(CSR_MWIDDELEGH2, mwiddelegh);
 
     return 0;
 }

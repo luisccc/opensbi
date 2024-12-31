@@ -230,6 +230,7 @@ void csr_write_num(int csr_num, unsigned long val)
 	switchcase_csr_write_16(CSR_MHPMEVENT16, val)
 	switchcase_csr_write(CSR_MLWID, val)
 	switchcase_csr_write(CSR_MWIDDELEG, val)
+	switchcase_csr_write(CSR_MWIDDELEGH2, val)
 
 	default:
 		sbi_panic("%s: Unknown CSR %#x", __func__, csr_num);

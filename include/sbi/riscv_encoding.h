@@ -732,6 +732,10 @@
 #define CSR_MLWID           0x390
 #define CSR_SLWID           0x190
 #define CSR_MWIDDELEG       0x748
+#define CSR_MWIDDELEGH      0x749
+
+#define CSR_MWIDDELEGH2     0x74A
+#define CSR_MWIDDELEGH3     0x74B
 
 /* Machine Indirect Register Alias */
 #define CSR_MISELECT			0x350
