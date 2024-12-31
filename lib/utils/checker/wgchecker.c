@@ -3,15 +3,29 @@
 #include <sbi_utils/checker/worldguard.h>
 #include <sbi_utils/checker/wgchecker.h>
 
+// typedef struct
+// {
+// 	u64 addr;
+// 	u64 perm;
+// 	u32 cfg;
+// 	// Reserved fields, helps maintain memory alignment
+// 	u32 rsv0;
+// 	u64 rsv1;
+// } __attribute__((aligned(32), __packed__)) slot_t;
+
 typedef struct
 {
 	u64 addr;
 	u64 perm;
 	u32 cfg;
 	// Reserved fields, helps maintain memory alignment
-	u32 rsv0;
+	u32 rsv;
+	u64 permh;
+	u64 permh2;
+	u64 permh3;
 	u64 rsv1;
-} __attribute__((aligned(32), __packed__)) slot_t;
+	u64 rsv2;
+} __attribute__((aligned(64), __packed__)) slot_t;
 
 typedef struct
 {
@@ -71,6 +85,9 @@ int wgchecker_init(struct platform_wgchecker_data *wgchecker){
 
 			if(mem_reg->region->base == checker_start && rend == checker_end - 1){
 				slots[1].perm = mem_reg->perm; // Give permissions depending on wid
+				slots[1].permh  = mem_reg->permh; // Give permissions depending on wid
+				slots[1].permh2 = mem_reg->permh2; // Give permissions depending on wid
+				slots[1].permh3 = mem_reg->permh3; // Give permissions depending on wid
 				slots[1].cfg  = 0x1; // Set to TOR
 			}
 		}
@@ -85,6 +102,9 @@ int wgchecker_init(struct platform_wgchecker_data *wgchecker){
 
 			if(mem_reg->region->base >= checker_start && rend < checker_end){
 				slots[slot].perm = mem_reg->perm; // Give permissions depending on wid
+				slots[slot].permh  = mem_reg->permh; // Give permissions depending on wid
+				slots[slot].permh2 = mem_reg->permh2; // Give permissions depending on wid
+				slots[slot].permh3 = mem_reg->permh3; // Give permissions depending on wid
 				slots[slot].cfg  = 0x3;    // Set to NAPOT
 				slots[slot].addr = encode_addr(mem_reg->region->base, mem_reg->region->order, 0x3);
 

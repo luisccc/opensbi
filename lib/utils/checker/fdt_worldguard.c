@@ -13,7 +13,7 @@ static int fdt_parse_wgmemreg_node(const void *fdt, int nodeoffset)
 	u64 val64;
 	const u32 *val;
     const u32 *wids;
-	unsigned long base, order, perm = 0;
+	unsigned long base, order, perm = 0, permh = 0, permh2 = 0, permh3 = 0;
     
     /* Read "base" DT property */
 	val = fdt_getprop(fdt, nodeoffset, "base", &len);
@@ -40,11 +40,21 @@ static int fdt_parse_wgmemreg_node(const void *fdt, int nodeoffset)
 	rcount = (u32)len / (sizeof(u32) * 2);
 	for (i = 0; i < rcount; i++) {
         wid = fdt32_to_cpu(wids[2 * i]);
-
-        perm |= ((fdt32_to_cpu(wids[(2 * i) + 1])&0x3) << wid*2);
+		
+		if(wid > 95) {
+			wid -= 96;
+			permh3 |= ((fdt32_to_cpu(wids[(2 * i) + 1])&0x3) << wid*2);
+		} else if(wid > 63) {
+			wid -= 64;
+			permh2 |= ((fdt32_to_cpu(wids[(2 * i) + 1])&0x3) << wid*2);
+		} else if(wid > 31) {
+			wid -= 32;
+			permh |= ((fdt32_to_cpu(wids[(2 * i) + 1])&0x3) << wid*2);
+		} else
+			perm |= ((fdt32_to_cpu(wids[(2 * i) + 1])&0x3) << wid*2);
 	}
 
-    rc = worldguard_memregion_init(base, order, perm);
+    rc = worldguard_memregion_init(base, order, perm, permh, permh2, permh3);
 
     return rc;
 }

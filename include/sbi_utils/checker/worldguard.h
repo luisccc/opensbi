@@ -15,6 +15,9 @@ struct worldguard_memregion {
 
 	/** Flags representing wid permitions */
     unsigned long perm;
+	unsigned long permh;
+	unsigned long permh2;
+	unsigned long permh3;
 };
 
 /** Head of linked list of mem_regions */
@@ -28,6 +31,6 @@ int worldguard_init(void);
 int worldguard_hart_init(unsigned long mlwid, unsigned long mwiddeleg, unsigned long mwiddelegh);
 int worldguard_memregion_init(unsigned long base,
 				unsigned long order,
-				unsigned long perm);
+				unsigned long perm, unsigned long permh, unsigned long permh2, unsigned long permh3);
 
 #endif

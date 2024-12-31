@@ -27,7 +27,7 @@ int worldguard_hart_init(unsigned long mlwid, unsigned long mwiddeleg, unsigned 
 
 int worldguard_memregion_init(unsigned long base,
 				unsigned long order,
-				unsigned long perm)
+				unsigned long perm, unsigned long permh, unsigned long permh2, unsigned long permh3)
 {
 	struct sbi_memregion *mem_reg = NULL;
     struct worldguard_memregion* reg;
@@ -41,6 +41,9 @@ int worldguard_memregion_init(unsigned long base,
 	if(sbi_memregion_init(base, order, &mem_reg) == SBI_OK){
 		reg->region = mem_reg;
 		reg->perm   = perm;
+		reg->permh    = permh;
+		reg->permh2   = permh2;
+		reg->permh3   = permh3;
 
         // Add to the list
 	    sbi_list_add_tail(&reg->node, &wg_memregion_list);
